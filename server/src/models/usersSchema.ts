@@ -14,7 +14,11 @@ export interface IUser extends Document {
     lastName: String;
     createdAt: Date;
     role: String;
-    avatarUrl: String;
+    // type this way image
+    avatarImage: {
+        data: Buffer;
+        contentType: String;
+    };
     isActive: Boolean;
     lastLogin: Date;
 }
@@ -62,9 +66,12 @@ const userSchema: Schema = new mongoose.Schema({
     role: {
         type: String,
         enum: ["user", "admin", "moderator"],
+        default: "user",
     },
-    avatarUrl: {
-        type: String,
+    avatarImage: {
+        //Buffer is a built-in Node.js class that represents a chunk of binary data. Using Buffer in this case allows you to store image data directly in the MongoDB document as binary data.
+        data: Buffer,
+        contentType: String, // in future it will store type of file jpg, png ..
     },
     isActive: {
         type: Boolean,

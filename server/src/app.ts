@@ -11,6 +11,7 @@ import bodyParser from "body-parser";
 //other components imports
 import connectDB from "./config/db";
 import dev from "./config";
+import useRouter from "./routes/userRoutes";
 
 // use Application type from express
 const app: Application = express();
@@ -26,6 +27,8 @@ app.get("/", (req: Request, res: Response) => {
         message: "Server is running OK",
     });
 });
+
+app.use("/api/v1/users", useRouter);
 
 const PORT = dev.app.serverPort;
 

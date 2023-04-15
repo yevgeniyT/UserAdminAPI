@@ -6,7 +6,11 @@ declare type userType = {
     lastName: String;
     createdAt: Date;
     role: String;
-    avatarUrl: String;
+    avatarImage: {
+        data: Buffer;
+        contentType: String;
+    };
+
     isActive: Boolean;
     lastLogin: Date;
 };
