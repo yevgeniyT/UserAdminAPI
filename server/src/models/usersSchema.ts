@@ -1,12 +1,9 @@
+// Dependencies and types imports
 import mongoose, { Schema, Document, model } from "mongoose";
 
-//Generating UUID in the schema:
-// Pros:
-// The ID generation logic is centralized in the schema definition.
-// No need to explicitly generate the UUID when creating a new user in the controller.
-// Cons:
-// The schema becomes less flexible since it always generates a UUID for the id field.
-import { v4 as uuidv4 } from "uuid";
+//other components imports
+import { getUniqueID } from "../helper/getId";
+import { isEmailValid, isStrongPassword } from "../helper/validation";
 
 //Extends the Document interface from Mongoose. This interface represents the structure of a product document in the database, including its properties and their types. Needed first of all for model
 export interface IUser extends Document {
@@ -18,25 +15,35 @@ export interface IUser extends Document {
     createdAt: Date;
     role: String;
     avatarUrl: String;
-    idActive: Boolean;
+    isActive: Boolean;
     lastLogin: Date;
 }
 //The Schema type in Mongoose, when used with TypeScript, is a way to define a schema programmatically while benefiting from type checking and autocompletion. It helps you to ensure that the structure of the schema you create is consistent with Mongoose's expected format.
+
 const userSchema: Schema = new mongoose.Schema({
+    //SchemaTypes from mongoose are used to define the types of the fields in a schema. They provide better type safety and ensure consistency between the defined schema and the actual data stored in the database.
     id: {
         type: String,
         required: true,
-        default: uuidv4(),
+        default: getUniqueID(),
     },
     email: {
         type: String,
         required: true,
         unique: true,
         trim: true,
+        validate: {
+            validator: isEmailValid,
+            message: "Invalid email fromat",
+        },
     },
     password: {
         type: String,
         required: true,
+        validator: {
+            validator: isStrongPassword,
+            message: "Paswword is not strong enough",
+        },
     },
     firstName: {
         type: String,
