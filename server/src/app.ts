@@ -1,5 +1,5 @@
 // import express server, and types
-import express, { Request, Response } from "express";
+import express, { Application, Request, Response } from "express";
 
 // import dependencies
 import cors from "cors";
@@ -7,9 +7,13 @@ import nodemon from "nodemon";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import bodyParser from "body-parser";
-import { log } from "console";
 
-const app = express();
+//other components imports
+import connectDB from "./config/db";
+import dev from "./config";
+
+// use Application type from express
+const app: Application = express();
 
 //to use dependencies
 app.use(cors());
@@ -19,12 +23,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).json({
-        message: "Server is running",
+        message: "Server is running OK",
     });
 });
 
-const PORT = 3002;
+const PORT = dev.app.serverPort;
 
 app.listen(PORT, () => {
     console.log("Server is OK");
+    connectDB();
 });
