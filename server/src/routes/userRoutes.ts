@@ -4,10 +4,11 @@ import { Router } from "express";
 import formidable from "express-formidable";
 //other components imports
 import { registerUser } from "../controllers/userController";
+import { validateFormData } from "../middlewares/valdateFormData";
 
 const router = Router();
 
 //Router for sign in user
-router.post("/register", formidable(), registerUser);
+router.post("/register", formidable(), validateFormData, registerUser);
 
 export default router;

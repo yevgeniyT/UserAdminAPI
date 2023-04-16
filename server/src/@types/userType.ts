@@ -1,16 +1,16 @@
 declare type userType = {
-    id: String;
-    email: String;
-    password: String;
-    firstName: String;
-    lastName: String;
+    id: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
     createdAt: Date;
-    role: String;
+    role: string;
     avatarImage: {
         data: Buffer;
-        contentType: String;
+        contentType: string;
     };
 
-    isActive: Boolean;
+    isActive: boolean;
     lastLogin: Date;
 };
