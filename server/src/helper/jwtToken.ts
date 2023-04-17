@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 
 import dev from "../config";
 
-//Use optional fuilds to handle type error in userController as, all fuilds can be undefined if user not provide input
+//Use optional fuilds? to handle type error in userController as, all fuilds can be undefined if user not provide input
 const getToken = (
     email?: string,
     password?: string,
@@ -27,4 +27,13 @@ const getToken = (
     return token;
 };
 
-export { getToken };
+const verifyToken = (
+    token: string,
+    callback: (err: any, decodedData: any) => void
+) => {
+    jwt.verify(token, dev.app.jwtKey, (err, decodedData) => {
+        callback(err, decodedData);
+    });
+};
+
+export { getToken, verifyToken };
