@@ -3,7 +3,7 @@ import fs from "fs";
 
 //other components imports
 import User from "../models/usersSchema";
-import { encryptPassword } from "../helper/securePassword";
+import { checkPassword, encryptPassword } from "../helper/securePassword";
 import { getToken, verifyToken } from "../helper/jwtToken";
 import sendEmailWithNodeMailer from "../helper/emailService";
 import dev from "../config";
@@ -40,7 +40,7 @@ const registerUser = async (req: Request, res: Response) => {
             subject: "Account Activation Email",
             html: `
             <h2> Hello ${firstName} ${lastName} ! </h2>
-            <p> Please click here to <a href="${dev.app.clientUrl}/api/v1/users/activate/${token}" target="_blank"> activate your account </a> </p>`,
+            <p> Please click here to <a href="${dev.app.clientUrl}/api/v1/users/activate?token=${token}" target="_blank"> activate your account </a> </p>`,
         };
         // use fuction from emailService to sent varification email>
         sendEmailWithNodeMailer(emailData);
@@ -135,4 +135,71 @@ const verifyEmail = async (req: Request, res: Response) => {
     }
 };
 
-export { registerUser, verifyEmail };
+const loginUser = async (req: Request, res: Response) => {
+    try {
+        // 1. Check for missing required fields
+        const { email, password } = req.body as Partial<userType>;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: "All fields are required." });
+        }
+        //2 Chek if the user exist already
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.status(400).json({
+                message: "User is not exist, please sing in first",
+            });
+        }
+
+        // 4. Chect if the password match using helper/securePassword
+        // get password from formidable and compare it with paswword in data base
+        // use await as without it user will pass varification with any password!!!!!
+        const isPasswordMatched = await checkPassword(
+            password,
+            //String in scheama has String type, while password from payload string primitive. To meet TS requirments toString() is used
+            user.password.toString()
+        );
+
+        if (!isPasswordMatched) {
+            return res.status(400).json({
+                message: "Incorrect data. Please try again.",
+            });
+        }
+
+        return res.status(200).json({
+            user: {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+            },
+            message: "User successfully logged in. Welcome!",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        return res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+
+const logoutUser = (req: Request, res: Response) => {
+    try {
+        return res.status(200).json({
+            message: "User is loged out",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        return res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+export { registerUser, verifyEmail, loginUser, logoutUser };

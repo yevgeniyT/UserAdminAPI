@@ -25,7 +25,8 @@ const checkPassword = async (
     plaintextPassword: string,
     hashPassword: string
 ): Promise<boolean> => {
-    return bcrypt.compare(plaintextPassword, hashPassword);
+    // use await as without it user will pass varification with any password
+    return await bcrypt.compare(plaintextPassword, hashPassword);
 };
 
 export { encryptPassword, checkPassword };
