@@ -5,7 +5,7 @@ import fs from "fs";
 import User from "../models/usersSchema";
 import { checkPassword, encryptPassword } from "../helper/securePassword";
 import { getToken, verifyToken } from "../helper/jwtToken";
-import sendEmailWithNodeMailer from "../helper/emailService";
+import sendEmailWithNodeMailer from "../services/emailService";
 import dev from "../config";
 
 //The registerUser function is responsible for collecting user data, sending a verification email with a token. This is done to ensure that users must verify their email addresses before they can access the application. The token sent in the email contains the user data necessary for account activation.
@@ -60,7 +60,6 @@ const registerUser = async (req: Request, res: Response) => {
         });
     }
 };
-
 //The verifyEmail function is responsible for verifying the token received from the user when they click the activation link in the email. If the token is valid, the function updates the user's record in the database,  and the user's account becomes active.
 const verifyEmail = async (req: Request, res: Response) => {
     try {
@@ -134,7 +133,7 @@ const verifyEmail = async (req: Request, res: Response) => {
         });
     }
 };
-
+//The loginUser function handles user authentication by checking required fields, verifying the user's existence, and matching the provided password. If successful, it creates a session with a userId key, storing the user's _id from the database, and returns the user's basic information with a success message. In case of errors, it returns appropriate status codes and messages.
 const loginUser = async (req: Request, res: Response) => {
     try {
         // 1. Check for missing required fields
@@ -151,7 +150,7 @@ const loginUser = async (req: Request, res: Response) => {
             });
         }
 
-        // 4. Chect if the password match using helper/securePassword
+        // 3. Chect if the password match using helper/securePassword
         // get password from formidable and compare it with paswword in data base
         // use await as without it user will pass varification with any password!!!!!
         const isPasswordMatched = await checkPassword(
@@ -165,7 +164,8 @@ const loginUser = async (req: Request, res: Response) => {
                 message: "Incorrect data. Please try again.",
             });
         }
-
+        // 4. Create a session with a userId key (can be any name) and store the user's _id from the database. We found the user above and have access to it here. This session is stored on the server, and a session cookie containing the _id is passed to the browser. A session is essentially an object that can store multiple key-value pairs.
+        req.session.userId = user._id;
         return res.status(200).json({
             user: {
                 firstName: user.firstName,
@@ -185,11 +185,22 @@ const loginUser = async (req: Request, res: Response) => {
         });
     }
 };
-
+//The logoutUser function is a request handler for logging out a user. It first attempts to destroy the user session on the server-side. If there's an error during the session destruction, it responds with a status code of 500 and an error message. If the session is successfully destroyed, the handler clears the "user_session" cookie on the client-side, effectively logging the user out.
 const logoutUser = (req: Request, res: Response) => {
     try {
-        return res.status(200).json({
-            message: "User is loged out",
+        // Destroy the user session in server
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "An error occurred while logging out.",
+                });
+            }
+            // Clear the session cookie in user side
+            res.clearCookie("user_session");
+
+            return res.status(200).json({
+                message: "User is logged out",
+            });
         });
     } catch (error: unknown) {
         if (typeof error === "string") {
@@ -202,4 +213,100 @@ const logoutUser = (req: Request, res: Response) => {
         });
     }
 };
-export { registerUser, verifyEmail, loginUser, logoutUser };
+//This function, getUserProfile, is an asynchronous Express route handler that retrieves a user profile using the req.session.userId. It tries to find a user in the database using the findById method. If the user is not found, a 404 status is returned with an error message. If the user is found, a 200 status is returned with the user data and a success message.
+const getUserProfile = async (req: Request, res: Response) => {
+    try {
+        // Here we pass id directly without using pair key-value by using findById methon insted of findByOne and data from session
+        const user = await User.findById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({
+                message: "Can not find user with such id",
+            });
+        }
+
+        return res.status(200).json({
+            User: user,
+            message: "Successful operation",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        return res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+//The updateUserProfile function is an asynchronous Express route handler that updates a user profile using the req.session.userId and the request body. It first checks if the user with the given session ID exists in the database. If not, it returns a 404 status with an error message. If the user exists, it uses the findByIdAndUpdate Mongoose method with the spread operator to update the user's data. The new: true and runValidators: true options ensure the updated document is returned and schema validation rules are applied
+const updateUserProfile = async (req: Request, res: Response) => {
+    try {
+        // 1. Check if the user with id stored in session exist in DB
+        const user = await User.findById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({
+                message: "Can not find user with such id",
+            });
+        }
+        // 2.Use findByIdAndUpdate mpngoose method to find user and update using spred operator (whatever we have in body - update)
+        const updatedUser = await User.findByIdAndUpdate(
+            req.session.userId,
+            { ...req.body },
+            //new: true: By default, the findByIdAndUpdate method returns the original document before the update. When you set the new option to true, it will return the updated document instead.
+            //runValidators: true: Mongoose schemas can have validation rules defined, such as required fields, minlength, maxlength, etc. By default, these validation rules are applied when creating new documents, but not when updating existing ones. Setting the runValidators option to true ensures that the update operation follows the schema validation rules, so any updates that don't meet the criteria will result in an error.
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(500).json({
+                message: "An error occurred while updating the user profile.",
+            });
+        }
+        res.status(200).json({
+            message: "Successful operation",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+//The deleteUserProfile function is an asynchronous Express route handler that deletes a user profile using the req.session.userId. It first checks if the user with the given session ID exists in the database. If not, it returns a 404 status with an error message. If the user exists, it uses the findByIdAndDelete Mongoose method to delete the user's data.
+const deleteUserProfile = async (req: Request, res: Response) => {
+    try {
+        const user = await User.findById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({
+                message: "Can not find user with such id",
+            });
+        }
+        await User.findByIdAndDelete(req.session.userId);
+        res.status(200).json({
+            message: "User was deleted sucessfuly",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+export {
+    registerUser,
+    verifyEmail,
+    loginUser,
+    logoutUser,
+    getUserProfile,
+    updateUserProfile,
+    deleteUserProfile,
+};

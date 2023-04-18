@@ -7,7 +7,6 @@ const validateFormData = (req: Request, res: Response, next: NextFunction) => {
     const { email, password, firstName, lastName } =
         req.fields as Partial<userType>;
     const { avatarImage } = req.files as Partial<userType>;
-    console.log(avatarImage);
 
     // Check for missing required fields
     if (!email || !password || !firstName || !lastName) {

@@ -12,6 +12,7 @@ const dev = {
         smtpUsername: process.env.SMTP_USERNAME,
         smtpPassword: process.env.SMTP_PASSWORD,
         clientUrl: process.env.CLIENT_URL,
+        sessionSecretKey: process.env.SESSION_SECRET_KEY || "",
     },
     //Use || "", or "localhost..."  ensures that the url property of the db object will always have a value of type string. If process.env.DB_URL is not undefined, it will use the value of process.env.DB_URL. If it is undefined, it will use an empty string "" as the default value.
     db: { url: process.env.DB_URL || "" },
