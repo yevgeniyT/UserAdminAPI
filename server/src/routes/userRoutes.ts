@@ -13,6 +13,9 @@ import {
     getUserProfile,
     updateUserProfile,
     deleteUserProfile,
+    requestPasswordReset,
+    validatePasswordResetToken,
+    resetPassword,
 } from "../controllers/userController";
 import { validateFormData } from "../middlewares/valdateFormData";
 import dev from "../config";
@@ -50,5 +53,10 @@ userRouter
     .get(isLoggedIn, getUserProfile)
     .put(isLoggedIn, updateUserProfile)
     .delete(isLoggedIn, deleteUserProfile);
+
+//Routers tp handele forgot-reset password
+userRouter.post("/forgot-password", requestPasswordReset);
+userRouter.get("/reset-password/:token", validatePasswordResetToken);
+userRouter.put("/reset-password", resetPassword);
 
 export default userRouter;

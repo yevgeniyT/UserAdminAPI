@@ -26,14 +26,12 @@ const registerUser = async (req: Request, res: Response) => {
         //use exported function to hash the password
         const hashPassword = await encryptPassword(password);
 
-        //place all data in token temporrary while waiting user confermation send to email
+        //place all data in token temporrary while waiting user confirmation send to email. getToken recieves 2 parameters, first is objext and the second is array of keys
         const token = getToken(
-            email,
-            hashPassword,
-            firstName,
-            lastName,
-            avatarImage
+            { email, password, firstName, lastName, avatarImage },
+            ["email", "password", "firstName", "lastName"]
         );
+
         // That const will be passed to emailService
         const emailData = {
             email,
@@ -94,7 +92,6 @@ const verifyEmail = async (req: Request, res: Response) => {
                     message: "User is already exist",
                 });
             }
-            console.log(decodedData);
 
             //Creating user without image:
             const newUser = new User({
@@ -301,6 +298,129 @@ const deleteUserProfile = async (req: Request, res: Response) => {
         });
     }
 };
+
+const requestPasswordReset = async (req: Request, res: Response) => {
+    try {
+        // 1. Check for missing required fields
+        const { email, firstName, lastName } = req.body as Partial<userType>;
+        if (!email) {
+            return res.status(400).json({ error: "Email is required." });
+        }
+        console.log(email);
+
+        // 2. Chek if the user exist already
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.status(400).json({
+                message: "User is not exist",
+            });
+        }
+
+        // 3. Place email to token to use it after confirmation that will be send by email. getToken recieves 2 parameters, first is objext and the second is array of keys
+        const token = getToken({ email }, ["email"]);
+        console.log(token);
+
+        // 4. Store email text to be sent by email in variable
+        const emailData = {
+            email,
+            subject: "Reset password Email",
+            html: `
+            <h2> Hello ${firstName} ${lastName} ! </h2>
+            <p> Please click here to <a href="${dev.app.clientUrl}/api/v1/users/reset-password?token=${token}" target="_blank"> reset your password  </a> </p>`,
+        };
+
+        // 5. Send email useing fuction from emailService to sent varification email>
+        sendEmailWithNodeMailer(emailData);
+
+        res.status(200).json({
+            message: "Link to reset password has been sent to your email",
+            token: token,
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+const validatePasswordResetToken = async (req: Request, res: Response) => {
+    try {
+        // 1. Get token from params
+        const token = req.params.token;
+
+        // 2. Check if the token exist
+        if (!token) {
+            return res.status(404).json({
+                message: "Token is missing",
+            });
+        }
+        // 3. Varifying and save user to DB. Use finction from helper/jwtToken to verify email and decode data
+        verifyToken(token, async (err, decodedData) => {
+            if (err) {
+                console.log("An error occurred:", err.message);
+                return res.status(401).json({
+                    message: "Token can be expired",
+                });
+            }
+            res.status(200).json({
+                message: "Successful operation",
+                email: decodedData.email,
+            });
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
+const resetPassword = async (req: Request, res: Response) => {
+    try {
+        // 1. Get data from front end. Important that user is not passing email, it passed as successful massege when user varify token. Just need to store it and pass back to use it to find user in db
+        const { email, password } = req.body;
+        console.log(email);
+        console.log(password);
+
+        // 2. Check if we have all fields
+        if (!email || !password) {
+            return res
+                .status(400)
+                .json({ error: "Email and password are required!" });
+        }
+        // 4. Encrypt password before saving to db
+        const hashPassword = await encryptPassword(password);
+
+        // 4. Update the user in the database using the email
+        const user = await User.updateOne(
+            { email: email },
+            {
+                $set: {
+                    password: hashPassword,
+                },
+            }
+        );
+        res.status(200).json({
+            message: "Password updated successfully",
+        });
+    } catch (error: unknown) {
+        if (typeof error === "string") {
+            console.log("An unknown error occurred.");
+        } else if (error instanceof Error) {
+            console.log(error.message);
+        }
+        res.status(500).json({
+            message: "An unknown error occurred.",
+        });
+    }
+};
 export {
     registerUser,
     verifyEmail,
@@ -309,4 +429,7 @@ export {
     getUserProfile,
     updateUserProfile,
     deleteUserProfile,
+    requestPasswordReset,
+    validatePasswordResetToken,
+    resetPassword,
 };
