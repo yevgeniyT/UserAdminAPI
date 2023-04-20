@@ -19,7 +19,7 @@ import {
 } from "../controllers/userController";
 import { validateFormData } from "../middlewares/valdateFormData";
 import dev from "../config";
-import { isLoggedIn } from "../middlewares/ensureAuthenticated";
+import { isLoggedIn } from "../middlewares/isLoggedIn";
 
 const userRouter = Router();
 

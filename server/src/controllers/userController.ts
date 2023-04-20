@@ -72,7 +72,6 @@ const verifyEmail = async (req: Request, res: Response) => {
         //Use finction from helper/jwtToken to verify email and decode data
         verifyToken(token, async (err, decodedData) => {
             if (err) {
-                console.log("An error occurred:", err.message);
                 return res.status(401).json({
                     message: "Token can be expired",
                 });
@@ -163,6 +162,9 @@ const loginUser = async (req: Request, res: Response) => {
         }
         // 4. Create a session with a userId key (can be any name) and store the user's _id from the database. We found the user above and have access to it here. This session is stored on the server, and a session cookie containing the _id is passed to the browser. A session is essentially an object that can store multiple key-value pairs.
         req.session.userId = user._id;
+        //String in scheama has String type, while role from payload string primitive. To meet TS requirments toString() is used
+        req.session.userRole = user.role.toString();
+
         return res.status(200).json({
             user: {
                 firstName: user.firstName,
