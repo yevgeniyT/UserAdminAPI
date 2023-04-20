@@ -25,11 +25,12 @@ const registerUser = async (req: Request, res: Response) => {
         }
         //use exported function to hash the password
         const hashPassword = await encryptPassword(password);
+        console.log("Hashed password:", hashPassword);
 
         //place all data in token temporrary while waiting user confirmation send to email. getToken recieves 2 parameters, first is objext and the second is array of keys
         const token = getToken(
-            { email, password, firstName, lastName, avatarImage },
-            ["email", "password", "firstName", "lastName"]
+            { email, hashPassword, firstName, lastName, avatarImage },
+            ["email", "hashPassword", "firstName", "lastName"]
         );
 
         // That const will be passed to emailService
@@ -79,7 +80,7 @@ const verifyEmail = async (req: Request, res: Response) => {
             // Get decode data from decodedData to use when save data to DB
             const {
                 email,
-                password,
+                hashPassword,
                 firstName,
                 lastName,
                 avatarImage,
@@ -95,7 +96,7 @@ const verifyEmail = async (req: Request, res: Response) => {
             //Creating user without image:
             const newUser = new User({
                 email: email,
-                password: password,
+                password: hashPassword,
                 firstName: firstName,
                 lastName: lastName,
                 isActive: true,

@@ -5,6 +5,13 @@ import { Request, Response, NextFunction } from "express";
 
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log(req.session.userRole);
+        // Check if the session exist
+        if (!req.session) {
+            return res
+                .status(401)
+                .json({ message: "Unauthorized: No session found" });
+        }
         const role = req.session.userRole;
 
         if (role === "admin") {

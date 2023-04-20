@@ -5,7 +5,7 @@ import dev from "../config";
 //Use optional fuilds? to handle type error in userController as, all fuilds can be undefined if user not provide input
 interface UserPayload {
     email?: string;
-    password?: string;
+    hashPassword?: string;
     firstName?: string;
     lastName?: string;
     avatarImage?: {
@@ -21,6 +21,7 @@ const getToken = (
     //(keyof UserPayload)[]: This is an array of the keys of the UserPayload interface. In this case, it represents an array that can have any combination of the keys of UserPayload. For example, ['email', 'password'] or ['firstName', 'lastName', 'avatarImage']
     requiredFields: (keyof UserPayload)[]
 ): string => {
+    console.log("Payload:", payload);
     // Check if all required fields are present. This code block is a for...of loop that iterates over the requiredFields array. The requiredFields array contains the keys from the UserPayload interface that are required for the current use case of the getToken function.
     //In each iteration, field represents a key from the UserPayload interface, which is an element of the requiredFields array.
     for (const field of requiredFields) {

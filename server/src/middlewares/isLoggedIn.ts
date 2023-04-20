@@ -5,7 +5,15 @@ import { Request, Response, NextFunction } from "express";
 
 const isLoggedIn = (req: Request, res: Response, next: NextFunction) => {
     try {
+        // Check if the session exist
+        if (!req.session) {
+            return res
+                .status(401)
+                .json({ message: "Unauthorized: No session found" });
+        }
         // Check if the session exists in the cookies; if so, proceed to the next middleware
+        console.log(req.session.userId);
+
         if (req.session.userId) {
             next();
         } else {
