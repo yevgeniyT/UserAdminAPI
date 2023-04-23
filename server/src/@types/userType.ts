@@ -7,11 +7,7 @@ declare type userType = {
     lastName: string;
     createdAt: Date;
     role: string;
-    avatarImage: {
-        data: Buffer;
-        contentType: string;
-    };
-
+    avatarImage: string;
     isActive: boolean;
     lastLogin: Date;
 };

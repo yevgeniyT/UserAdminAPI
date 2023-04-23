@@ -1,8 +1,9 @@
 import { Router } from "express";
-import session from "express-session";
 
 //express-formidable is a middleware for Express.js that simplifies handling form submissions with enctype multipart/form-data. It is particularly useful when your form includes file uploads.
-import formidable from "express-formidable";
+// import formidable from "express-formidable";
+// import multer to handle image upload
+import upload from "../middlewares/multerConfig";
 
 //other components imports
 import {
@@ -17,18 +18,28 @@ import {
     validatePasswordResetToken,
     resetPassword,
 } from "../controllers/userController";
-import { validateFormData } from "../middlewares/valdateFormData";
-import dev from "../config";
+// reusable input validation inports
+import {
+    resetPasswordValidation,
+    signInValidation,
+    signUpValidation,
+} from "../middlewares/inputValidation";
+// import dev from "../config";
 import { isLoggedIn } from "../middlewares/isLoggedIn";
 
 const userRouter = Router();
 
 //Router for sign in user
-userRouter.post("/register", formidable(), validateFormData, registerUser);
+userRouter.post(
+    "/register",
+    upload.single("avatarImage"),
+    signUpValidation,
+    registerUser
+);
 //Router for verifying email
 userRouter.post("/verify-email", verifyEmail);
 
-userRouter.post("/login", loginUser);
+userRouter.post("/login", signInValidation, loginUser);
 userRouter.get("/logout", logoutUser);
 
 // Read, Update, Delete profile routers using chaining
@@ -41,6 +52,6 @@ userRouter
 //Routers tp handele forgot-reset password
 userRouter.post("/forgot-password", requestPasswordReset);
 userRouter.get("/reset-password/:token", validatePasswordResetToken);
-userRouter.put("/reset-password", resetPassword);
+userRouter.put("/reset-password", resetPasswordValidation, resetPassword);
 
 export default userRouter;

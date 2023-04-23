@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import fs from "fs";
 
 //other components imports
 import User from "../models/usersSchema";
@@ -8,13 +7,15 @@ import { getToken, verifyToken } from "../helper/jwtToken";
 import sendEmailWithNodeMailer from "../services/emailService";
 import dev from "../config";
 
+import { UserPayload } from "../@types/userTypes";
+
 //The registerUser function is responsible for collecting user data, sending a verification email with a token. This is done to ensure that users must verify their email addresses before they can access the application. The token sent in the email contains the user data necessary for account activation.
 const registerUser = async (req: Request, res: Response) => {
     try {
         //The Partial<T> type is a utility type that makes all properties of the type T optional. In my case, it means that every property of userType can be undefined. Don't forget to handle undefined in midleware.
         const { email, password, firstName, lastName } =
-            req.fields as Partial<userType>;
-        const { avatarImage } = req.files as Partial<userType>;
+            req.body as Partial<userType>;
+        const avatarImage = req.file as Express.Multer.File;
 
         //I want to check if user exist by email
         const isExist = await User.findOne({ email: email });
@@ -25,11 +26,11 @@ const registerUser = async (req: Request, res: Response) => {
         }
         //use exported function to hash the password
         const hashPassword = await encryptPassword(password);
-        console.log("Hashed password:", hashPassword);
-
+        // create a const with path of image that will be sored in DB later
+        const avatarImagePath = `src/uploads/${avatarImage.filename}`;
         //place all data in token temporrary while waiting user confirmation send to email. getToken recieves 2 parameters, first is objext and the second is array of keys
         const token = getToken(
-            { email, hashPassword, firstName, lastName, avatarImage },
+            { email, hashPassword, firstName, lastName, avatarImagePath },
             ["email", "hashPassword", "firstName", "lastName"]
         );
 
@@ -83,8 +84,8 @@ const verifyEmail = async (req: Request, res: Response) => {
                 hashPassword,
                 firstName,
                 lastName,
-                avatarImage,
-            }: userType = decodedData;
+                avatarImagePath,
+            }: UserPayload = decodedData;
             //Chek if the user exist already
             const isExist = await User.findOne({ email: email });
             if (isExist) {
@@ -92,6 +93,8 @@ const verifyEmail = async (req: Request, res: Response) => {
                     message: "User is already exist",
                 });
             }
+            console.log(avatarImagePath);
+            console.log(email);
 
             //Creating user without image:
             const newUser = new User({
@@ -101,12 +104,11 @@ const verifyEmail = async (req: Request, res: Response) => {
                 lastName: lastName,
                 isActive: true,
             });
-
-            //! need to type path and type
-            // if (avatarImage) {
-            //     newUser.avatarImage.data = fs.readFileSync(avatarImage.path);
-            //     newUser.avatarImage.contentType = avatarImage.type;
-            // }
+            // conditionaly add image to DB
+            if (avatarImagePath) {
+                newUser.avatarImage = avatarImagePath;
+            }
+            console.log(newUser);
 
             //Save user to DB
             const user = await newUser.save();
@@ -136,9 +138,6 @@ const loginUser = async (req: Request, res: Response) => {
         // 1. Check for missing required fields
         const { email, password } = req.body as Partial<userType>;
 
-        if (!email || !password) {
-            return res.status(400).json({ error: "All fields are required." });
-        }
         //2 Chek if the user exist already
         const user = await User.findOne({ email: email });
         if (!user) {
@@ -150,8 +149,9 @@ const loginUser = async (req: Request, res: Response) => {
         // 3. Chect if the password match using helper/securePassword
         // get password from formidable and compare it with paswword in data base
         // use await as without it user will pass varification with any password!!!!!
+        // password as string used to define type as sting because without that we have type error. That is because password can be undefined. But as we use validation as middleware in routers we can say for sure it 's a string
         const isPasswordMatched = await checkPassword(
-            password,
+            password as string,
             //String in scheama has String type, while password from payload string primitive. To meet TS requirments toString() is used
             user.password.toString()
         );
@@ -309,7 +309,6 @@ const requestPasswordReset = async (req: Request, res: Response) => {
         if (!email) {
             return res.status(400).json({ error: "Email is required." });
         }
-        console.log(email);
 
         // 2. Chek if the user exist already
         const user = await User.findOne({ email: email });
@@ -321,7 +320,6 @@ const requestPasswordReset = async (req: Request, res: Response) => {
 
         // 3. Place email to token to use it after confirmation that will be send by email. getToken recieves 2 parameters, first is objext and the second is array of keys
         const token = getToken({ email }, ["email"]);
-        console.log(token);
 
         // 4. Store email text to be sent by email in variable
         const emailData = {
@@ -389,20 +387,14 @@ const resetPassword = async (req: Request, res: Response) => {
     try {
         // 1. Get data from front end. Important that user is not passing email, it passed as successful massege when user varify token. Just need to store it and pass back to use it to find user in db
         const { email, password } = req.body;
-        console.log(email);
-        console.log(password);
 
-        // 2. Check if we have all fields
-        if (!email || !password) {
-            return res
-                .status(400)
-                .json({ error: "Email and password are required!" });
-        }
+        // 2. Check if we have all fields, Checking done by middlware in routers
+
         // 4. Encrypt password before saving to db
         const hashPassword = await encryptPassword(password);
 
         // 4. Update the user in the database using the email
-        const user = await User.updateOne(
+        await User.updateOne(
             { email: email },
             {
                 $set: {
