@@ -1,18 +1,16 @@
-//It checks if the user role stored in the session is "admin" and proceeds to the next middleware if the condition is met. If the user role is not "admin", it returns a 401 Unauthorized response with a corresponding message.
+//The isAdmin middleware checks if the user role stored in the token is "admin" and proceeds to the next middleware if the condition is met. If the user role is not "admin", it returns a 401 Unauthorized response with a corresponding message.
 
 // Import necessary modules and types
 import { Request, Response, NextFunction } from "express";
+import { AuthenticatedRequest } from "../@types/types";
 
-const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+const isAdmin = (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) => {
     try {
-        console.log(req.session.userRole);
-        // Check if the session exist
-        if (!req.session) {
-            return res
-                .status(401)
-                .json({ message: "Unauthorized: No session found" });
-        }
-        const role = req.session.userRole;
+        const role = req.user.role;
 
         if (role === "admin") {
             next();

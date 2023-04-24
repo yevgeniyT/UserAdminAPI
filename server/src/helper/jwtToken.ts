@@ -33,4 +33,18 @@ const verifyToken = (
     });
 };
 
-export { getToken, verifyToken };
+// Creats token using getToken function above in controller to be used insted on session-based authentification
+const createAuthToken = (userId: string, role: string): string => {
+    // Create a payload containing the user ID and role
+    const payload: UserPayload = {
+        userId,
+        role,
+    };
+
+    // Call the getToken function above with the payload and required fields
+    const token = getToken(payload, ["userId", "role"]);
+
+    return token;
+};
+
+export { getToken, verifyToken, createAuthToken };

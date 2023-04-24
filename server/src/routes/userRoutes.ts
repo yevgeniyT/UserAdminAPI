@@ -18,11 +18,11 @@ import {
     validatePasswordResetToken,
     resetPassword,
 } from "../controllers/userController";
-// reusable input validation inports
+// reusable input validation imports
 import {
     resetPasswordValidation,
     signInValidation,
-    signUpValidation,
+    onCreateUserValidation,
 } from "../middlewares/inputValidation";
 // import dev from "../config";
 import { isLoggedIn } from "../middlewares/isLoggedIn";
@@ -33,7 +33,7 @@ const userRouter = Router();
 userRouter.post(
     "/register",
     upload.single("avatarImage"),
-    signUpValidation,
+    onCreateUserValidation,
     registerUser
 );
 //Router for verifying email

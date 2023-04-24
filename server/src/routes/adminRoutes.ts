@@ -9,7 +9,8 @@ import {
 } from "../controllers/adminControllers";
 import { isLoggedIn } from "../middlewares/isLoggedIn";
 import { isAdmin } from "../middlewares/isAdmin";
-import dev from "../config";
+import { onCreateUserValidation } from "../middlewares/inputValidation";
+import upload from "../middlewares/multerConfig";
 
 const adminRouter = Router();
 
@@ -18,4 +19,5 @@ adminRouter.get("/users", isLoggedIn, isAdmin, getAllUsers);
 adminRouter.get("/:userId", isLoggedIn, isAdmin, getUserById);
 adminRouter.put("/:userId", isLoggedIn, isAdmin, updateUserById);
 adminRouter.delete("/:userId", isLoggedIn, isAdmin, deleteUserById);
+adminRouter.post("/users", upload.none(), onCreateUserValidation, createUser);
 export default adminRouter;

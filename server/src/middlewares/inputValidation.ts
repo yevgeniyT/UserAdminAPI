@@ -1,6 +1,6 @@
 import { createValidationMiddleware } from "./createValidationMiddleware";
 
-const signUpValidation = createValidationMiddleware([
+const onCreateUserValidation = createValidationMiddleware([
     "email",
     "password",
     "firstName",
@@ -13,4 +13,4 @@ const resetPasswordValidation = createValidationMiddleware([
     "password",
 ]);
 
-export { signUpValidation, signInValidation, resetPasswordValidation };
+export { onCreateUserValidation, signInValidation, resetPasswordValidation };

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 //other components imports
 import User from "../models/usersSchema";
+import { encryptPassword } from "../helper/securePassword";
 
 const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -48,17 +49,37 @@ const getUserById = async (req: Request, res: Response) => {
 };
 const createUser = async (req: Request, res: Response) => {
     try {
-        //Check if the user exist
-        const user = await User.findById(req.body.email);
-        if (!user) {
+        // 1. Recieve and distructure all data with types
+        const { email, password, firstName, lastName } =
+            req.body as Partial<userType>;
+        // 2. Check if the user exist
+        const findUser = await User.findOne({ email: req.body.email });
+        if (findUser) {
             return res.status(404).json({
-                message: "Can not find user with such id",
+                message: "User with such email already exists",
             });
         }
+        // 3. Use exported function to hash the password
+        const hashPassword = await encryptPassword(password);
 
-        res.status(200).json({
-            message: "Successful operation",
-            // Add other relevant response data
+        // 4. Creating user without image:
+        const newUser = new User({
+            email: email,
+            password: hashPassword,
+            firstName: firstName,
+            lastName: lastName,
+            isActive: true,
+        });
+
+        //Save user to DB
+        const user = await newUser.save();
+        if (!user) {
+            return res.status(400).json({
+                message: "User was not created",
+            });
+        }
+        return res.status(201).json({
+            message: "User was created",
         });
     } catch (error: unknown) {
         if (typeof error === "string") {
